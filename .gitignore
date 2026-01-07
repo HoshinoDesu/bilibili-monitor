@@ -1,0 +1,33 @@
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# Python缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 配置文件（可选，如果包含敏感信息）
+# config.json

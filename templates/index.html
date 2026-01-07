@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilibili视频热度监视器</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* CSS变量 - 亮色主题 */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f8f8;
+            --bg-tertiary: #eeeeee;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border-color: #e0e0e0;
+            --accent-color: #000000;
+            --card-bg: #ffffff;
+            --hover-bg: #f5f5f5;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-hover: 0 2px 8px rgba(0,0,0,0.10);
+            --chart-grid: #e5e5e5;
+            --chart-line: #000000;
+        }
+        
+        /* CSS变量 - 暗色主题 */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #252525;
+            --bg-tertiary: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --text-tertiary: #808080;
+            --border-color: #333333;
+            --accent-color: #ffffff;
+            --card-bg: #252525;
+            --hover-bg: #333333;
+            --shadow: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-hover: 0 2px 8px rgba(0,0,0,0.6);
+            --chart-grid: #333333;
+            --chart-line: #ffffff;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-secondary);
+            min-height: 100vh;
+            padding: 24px;
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .header-left h1 { 
+            color: var(--text-primary); 
+            margin-bottom: 6px; 
+            font-size: 24px; 
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle { 
+            color: var(--text-secondary); 
+            font-size: 13px; 
+            font-weight: 400;
+        }
+        
+        .theme-toggle {
+            width: 44px;
+            height: 44px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-toggle:hover {
+            background: var(--hover-bg);
+            transform: scale(1.05);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tab {
+            padding: 14px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+        
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--hover-bg);
+        }
+        
+        .tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .control-group { 
+            display: flex; 
+            gap: 12px; 
+            align-items: center; 
+            flex-wrap: wrap; 
+        }
+        
+        label { 
+            color: var(--text-secondary); 
+            font-size: 13px; 
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+        
+        textarea { 
+            resize: vertical; 
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+            line-height: 1.6;
+        }
+        
+        button {
+            padding: 10px 18px;
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            transition: all 0.2s ease;
+        }
+        
+        button:hover { 
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .refresh-btn { 
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            border-color: var(--text-primary);
+        }
+        
+        .settings-btn { 
+            background: var(--text-secondary);
+            color: var(--bg-primary);
+            border-color: var(--text-secondary);
+        }
+        
+        .danger-btn { 
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            border-color: var(--text-primary);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 450px;
+            margin-bottom: 32px;
+            padding: 24px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .video-selector {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .video-chip {
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 150px;
+        }
+        
+        .video-chip:hover {
+            background: var(--hover-bg);
+            border-color: var(--text-secondary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .video-chip.selected {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            border-color: var(--accent-color);
+        }
+        
+        .video-chip-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .video-chip.selected .video-chip-title {
+            color: var(--bg-primary);
+        }
+        
+        .video-chip-bv {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            font-family: 'SF Mono', monospace;
+        }
+        
+        .video-chip.selected .video-chip-bv {
+            color: var(--bg-secondary);
+            opacity: 0.8;
+        }
+        
+        .loading { 
+            text-align: center; 
+            color: var(--text-secondary); 
+            padding: 40px;
+            font-size: 14px;
+        }
+        
+        .error, .success {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading::before {
+            content: "◐";
+            display: inline-block;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .stat-card h4 {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            align-items: center;
+        }
+        
+        .stat-label { 
+            color: var(--text-secondary); 
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .stat-value { 
+            color: var(--text-primary); 
+            font-weight: 600; 
+            font-size: 14px;
+        }
+        
+        .form-section {
+            margin-bottom: 28px;
+            padding: 24px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .form-section h3 {
+            margin-bottom: 18px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .delete-section {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-top: 28px;
+        }
+        
+        .delete-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 18px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .last-update {
+            text-align: center;
+            color: var(--text-tertiary);
+            font-size: 11px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Bilibili视频热度监视器</h1>
+                <p class="subtitle">实时追踪多视频数据变化趋势</p>
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+                <span id="themeIcon">☀️</span>
+            </button>
+        </div>
+
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="successMessage" class="success" style="display: none;"></div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('monitor')">数据监控</button>
+            <button class="tab" onclick="switchTab('compare')">多视频对比</button>
+            <button class="tab" onclick="switchTab('settings')">系统设置</button>
+        </div>
+
+        <!-- 数据监控标签页 -->
+        <div id="tab-monitor" class="tab-content active">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="videoSelect">选择视频</label>
+                    <select id="videoSelect" onchange="loadSelectedVideo()" style="min-width: 300px;">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="dataLimit">数据点数</label>
+                    <select id="dataLimit" onchange="loadSelectedVideo()">
+                        <option value="20">20条</option>
+                        <option value="50" selected>50条</option>
+                        <option value="100">100条</option>
+                        <option value="200">200条</option>
+                    </select>
+                    <button class="refresh-btn" onclick="loadSelectedVideo()">刷新</button>
+                </div>
+            </div>
+
+            <div id="statsSummary" class="stats-summary"></div>
+
+            <div class="chart-container">
+                <canvas id="singleChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 多视频对比标签页 -->
+        <div id="tab-compare" class="tab-content">
+            <div class="video-selector" id="videoSelector">
+                <div class="loading">加载视频列表中...</div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label for="compareMetric">对比指标</label>
+                    <select id="compareMetric" onchange="loadCompareData()">
+                        <option value="view">播放量</option>
+                        <option value="like">点赞</option>
+                        <option value="coin">投币</option>
+                        <option value="favorite">收藏</option>
+                        <option value="share">转发</option>
+                        <option value="online">在线人数</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="compareLimit">数据点数</label>
+                    <select id="compareLimit" onchange="loadCompareData()">
+                        <option value="20">20条</option>
+                        <option value="50" selected>50条</option>
+                        <option value="100">100条</option>
+                        <option value="200">200条</option>
+                    </select>
+                    <button class="refresh-btn" onclick="loadCompareData()">刷新</button>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="compareChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 系统设置标签页 -->
+        <div id="tab-settings" class="tab-content">
+            <div class="form-section">
+                <h3>监控设置</h3>
+                <div class="form-group">
+                    <label for="fetchInterval">抓取间隔（分钟）</label>
+                    <input type="number" id="fetchInterval" min="1" value="10" style="width: 120px;">
+                </div>
+                <div class="form-group">
+                    <label for="monitorList">监控视频列表（每行一个BV号）</label>
+                    <textarea id="monitorList" rows="8" style="width: 100%; max-width: 600px;" 
+                        placeholder="BV1xx411c7XZ&#10;BV1yy411c7YY&#10;# 以 # 开头的行为注释"></textarea>
+                </div>
+                <button class="settings-btn" onclick="saveSettings()">保存设置</button>
+            </div>
+
+            <div class="delete-section">
+                <h3>数据管理</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-bottom: 20px;">
+                    ℹ️ 温馨提示：数据删除后无法恢复，请谨慎操作。可以选择删除指定视频的所有数据，或者按时间范围精确删除。留空时间范围则删除该视频的全部数据。
+                </p>
+                <div class="form-group">
+                    <label for="deleteVideo">选择视频</label>
+                    <select id="deleteVideo" style="width: 100%; max-width: 400px;">
+                        <option value="">所有视频</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>时间范围（可选）</label>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <input type="datetime-local" id="startTime" style="flex: 1; min-width: 200px;">
+                        <span style="color: var(--text-secondary); line-height: 38px;">至</span>
+                        <input type="datetime-local" id="endTime" style="flex: 1; min-width: 200px;">
+                    </div>
+                </div>
+                <button class="danger-btn" onclick="deleteData()">删除数据</button>
+            </div>
+        </div>
+
+        <div class="last-update" id="lastUpdate"></div>
+    </div>
+
+    <script>
+        // 全局变量
+        let singleChart = null;
+        let compareChart = null;
+        let allVideosInfo = [];
+        let selectedVideos = new Set();
+        let singleChartHiddenDatasets = {}; // 保存单视频图表的隐藏状态
+        let compareChartHiddenDatasets = {}; // 保存对比图表的隐藏状态
+
+        // 主题切换
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            document.getElementById('themeIcon').textContent = newTheme === 'light' ? '☀️' : '🌙';
+            localStorage.setItem('theme', newTheme);
+            
+            // 重新渲染图表以应用新主题
+            if (singleChart) loadSelectedVideo();
+            if (compareChart) loadCompareData();
+        }
+
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeIcon').textContent = savedTheme === 'light' ? '☀️' : '🌙';
+        }
+
+        // 获取当前主题的颜色
+        function getThemeColors() {
+            const style = getComputedStyle(document.documentElement);
+            return {
+                text: style.getPropertyValue('--text-primary').trim(),
+                grid: style.getPropertyValue('--chart-grid').trim(),
+                border: style.getPropertyValue('--border-color').trim()
+            };
+        }
+
+        // 标签页切换
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            if (tabName === 'monitor') loadVideosForMonitor();
+            if (tabName === 'compare') loadVideosForCompare();
+            if (tabName === 'settings') loadSettings();
+        }
+
+        // 初始化
+        async function init() {
+            initTheme();
+            await loadVideosForMonitor();
+            updateLastUpdateTime();
+            startAutoRefresh();
+        }
+
+        // 自动刷新功能
+        let autoRefreshInterval = null;
+        function startAutoRefresh() {
+            // 清除之前的定时器
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            // 每10秒刷新一次
+            autoRefreshInterval = setInterval(() => {
+                const activeTab = document.querySelector('.tab-content.active').id;
+                if (activeTab === 'tab-monitor') {
+                    loadSelectedVideo();
+                } else if (activeTab === 'tab-compare' && selectedVideos.size > 0) {
+                    loadCompareData();
+                }
+                updateLastUpdateTime();
+            }, 10000);
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                `最后更新: ${now.toLocaleString('zh-CN')}`;
+        }
+
+        // 加载视频列表（监控页）
+        async function loadVideosForMonitor() {
+            try {
+                const res = await fetch('/api/videos/info');
+                const result = await res.json();
+                if (result.code === 0 && result.data.length > 0) {
+                    const select = document.getElementById('videoSelect');
+                    select.innerHTML = result.data.map(v => 
+                        `<option value="${v.bv_id}">${v.title} (${v.bv_id})</option>`
+                    ).join('');
+                    loadSelectedVideo();
+                }
+            } catch (error) {
+                showError('加载视频列表失败: ' + error.message);
+            }
+        }
+
+        // 加载单个视频数据
+        async function loadSelectedVideo() {
+            const bvId = document.getElementById('videoSelect').value;
+            if (!bvId) return;
+
+            const limit = document.getElementById('dataLimit').value;
+            
+            try {
+                const res = await fetch(`/api/video/${bvId}/stats?limit=${limit}`);
+                const result = await res.json();
+                
+                if (result.code === 0) {
+                    renderStatsSummary({ [bvId]: result.data });
+                    renderSingleChart(result.data, bvId);
+                    updateLastUpdateTime();
+                }
+            } catch (error) {
+                showError('加载数据失败: ' + error.message);
+            }
+        }
+
+        // 渲染统计摘要
+        function renderStatsSummary(data) {
+            const container = document.getElementById('statsSummary');
+            container.innerHTML = '';
+            
+            for (const [bv, stats] of Object.entries(data)) {
+                if (stats.length === 0) continue;
+                
+                const latest = stats[stats.length - 1];
+                const first = stats[0];
+                
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <h4>${latest.title || bv}</h4>
+                    <div class="stat-item">
+                        <span class="stat-label">BV号</span>
+                        <span class="stat-value">${bv}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">播放量</span>
+                        <span class="stat-value">${formatNumber(latest.view)} ${getChangeText(first.view, latest.view)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">点赞</span>
+                        <span class="stat-value">${formatNumber(latest.like)} ${getChangeText(first.like, latest.like)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">投币</span>
+                        <span class="stat-value">${formatNumber(latest.coin)} ${getChangeText(first.coin, latest.coin)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">收藏</span>
+                        <span class="stat-value">${formatNumber(latest.favorite)} ${getChangeText(first.favorite, latest.favorite)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">转发</span>
+                        <span class="stat-value">${formatNumber(latest.share)} ${getChangeText(first.share, latest.share)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">在线人数</span>
+                        <span class="stat-value">${latest.online || 'N/A'}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function getChangeText(oldVal, newVal) {
+            const change = newVal - oldVal;
+            if (change > 0) return `<span style="opacity: 0.6; font-size: 11px;">(+${formatFullNumber(change)})</span>`;
+            else if (change < 0) return `<span style="opacity: 0.6; font-size: 11px;">(${formatFullNumber(change)})</span>`;
+            return '';
+        }
+
+        // 渲染单视频图表
+        function renderSingleChart(data, bvId) {
+            const canvas = document.getElementById('singleChart');
+            const ctx = canvas.getContext('2d');
+            
+            // 保存当前隐藏状态
+            if (singleChart) {
+                singleChartHiddenDatasets = {};
+                singleChart.data.datasets.forEach((dataset, i) => {
+                    singleChartHiddenDatasets[dataset.label] = !singleChart.isDatasetVisible(i);
+                });
+                singleChart.destroy();
+            }
+
+            const colors = getThemeColors();
+            const labels = data.map(d => new Date(d.timestamp).toLocaleString('zh-CN', { 
+                month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+            }));
+
+            // 从第一个数据点获取最小值作为Y轴起点
+            const firstData = data[0];
+            const firstValues = [
+                firstData.view,
+                firstData.like,
+                firstData.coin,
+                firstData.favorite
+            ].filter(v => v != null && v > 0);
+            const suggestedMin = Math.min(...firstValues);
+
+            singleChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '播放量',
+                            data: data.map(d => d.view),
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            fill: true
+                        },
+                        {
+                            label: '点赞',
+                            data: data.map(d => d.like),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            fill: true
+                        },
+                        {
+                            label: '投币',
+                            data: data.map(d => d.coin),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            fill: true
+                        },
+                        {
+                            label: '收藏',
+                            data: data.map(d => d.favorite),
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 300,
+                        easing: 'easeInOutQuad',
+                        y: false
+                    },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: colors.text,
+                                font: { size: 12, weight: '500' },
+                                padding: 15,
+                                usePointStyle: true
+                            },
+                            onClick: function(e, legendItem, legend) {
+                                const index = legendItem.datasetIndex;
+                                const ci = legend.chart;
+                                
+                                // 默认的显示/隐藏逻辑
+                                if (ci.isDatasetVisible(index)) {
+                                    ci.hide(index);
+                                } else {
+                                    ci.show(index);
+                                }
+                                
+                                // 重新计算可见数据的Y轴范围
+                                const visibleData = [];
+                                ci.data.datasets.forEach((dataset, i) => {
+                                    if (ci.isDatasetVisible(i)) {
+                                        visibleData.push(...dataset.data.filter(v => v != null && v > 0));
+                                    }
+                                });
+                                
+                                if (visibleData.length > 0) {
+                                    const minVal = Math.min(...visibleData);
+                                    ci.options.scales.y.min = minVal;
+                                    ci.update('none'); // 不带动画更新
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: colors.text,
+                            titleColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#000' : '#fff',
+                            bodyColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#000' : '#fff',
+                            borderColor: colors.border,
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { 
+                                color: colors.text,
+                                font: { size: 11 }
+                            },
+                            grid: { 
+                                color: colors.grid,
+                                lineWidth: 0.5
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            min: suggestedMin,
+                            ticks: { 
+                                color: colors.text,
+                                font: { size: 11 },
+                                callback: function(value) {
+                                    return value >= 10000 ? (value/10000).toFixed(1) + '万' : value;
+                                }
+                            },
+                            grid: { 
+                                color: colors.grid,
+                                lineWidth: 0.5
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 恢复隐藏状态
+            singleChart.data.datasets.forEach((dataset, i) => {
+                if (singleChartHiddenDatasets[dataset.label]) {
+                    singleChart.hide(i);
+                }
+            });
+        }
+
+        // 加载视频选择器（对比页）
+        async function loadVideosForCompare() {
+            try {
+                const res = await fetch('/api/videos/info');
+                const result = await res.json();
+                
+                if (result.code === 0) {
+                    allVideosInfo = result.data;
+                    renderVideoSelector();
+                }
+            } catch (error) {
+                showError('加载视频列表失败: ' + error.message);
+            }
+        }
+
+        // 渲染视频选择器
+        function renderVideoSelector() {
+            const container = document.getElementById('videoSelector');
+            if (allVideosInfo.length === 0) {
+                container.innerHTML = '<div class="loading">暂无视频数据</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            allVideosInfo.forEach(video => {
+                const chip = document.createElement('div');
+                chip.className = 'video-chip' + (selectedVideos.has(video.bv_id) ? ' selected' : '');
+                chip.innerHTML = `
+                    <div class="video-chip-title" title="${video.title}">${video.title}</div>
+                    <div class="video-chip-bv">${video.bv_id}</div>
+                `;
+                chip.onclick = () => toggleVideoSelection(video.bv_id);
+                container.appendChild(chip);
+            });
+        }
+
+        // 切换视频选择
+        function toggleVideoSelection(bvId) {
+            if (selectedVideos.has(bvId)) {
+                selectedVideos.delete(bvId);
+            } else {
+                selectedVideos.add(bvId);
+            }
+            renderVideoSelector();
+            if (selectedVideos.size > 0) {
+                loadCompareData();
+            }
+        }
+
+        // 加载对比数据
+        async function loadCompareData() {
+            if (selectedVideos.size === 0) {
+                if (compareChart) compareChart.destroy();
+                return;
+            }
+
+            const limit = document.getElementById('compareLimit').value;
+            const bvIds = Array.from(selectedVideos).join(',');
+
+            try {
+                const res = await fetch(`/api/videos/compare?bv_ids=${bvIds}&limit=${limit}`);
+                const result = await res.json();
+                
+                if (result.code === 0) {
+                    renderCompareChart(result.data);
+                    updateLastUpdateTime();
+                }
+            } catch (error) {
+                showError('加载对比数据失败: ' + error.message);
+            }
+        }
+
+        // 渲染对比图表
+        function renderCompareChart(data) {
+            const canvas = document.getElementById('compareChart');
+            const ctx = canvas.getContext('2d');
+            
+            // 保存当前隐藏状态
+            if (compareChart) {
+                compareChartHiddenDatasets = {};
+                compareChart.data.datasets.forEach((dataset, i) => {
+                    compareChartHiddenDatasets[dataset.label] = !compareChart.isDatasetVisible(i);
+                });
+                compareChart.destroy();
+            }
+
+            const colors = getThemeColors();
+            const metric = document.getElementById('compareMetric').value;
+            const metricNames = {
+                view: '播放量',
+                like: '点赞',
+                coin: '投币',
+                favorite: '收藏',
+                share: '转发',
+                online: '在线人数'
+            };
+
+            const allTimestamps = new Set();
+            Object.values(data).forEach(stats => {
+                stats.forEach(s => allTimestamps.add(s.timestamp));
+            });
+            const timestamps = Array.from(allTimestamps).sort();
+            const labels = timestamps.map(ts => new Date(ts).toLocaleString('zh-CN', { 
+                month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+            }));
+
+            // 计算所有数据的最小值，用于Y轴起点
+            const allMetricValues = [];
+            Object.values(data).forEach(stats => {
+                stats.forEach(s => {
+                    if (s[metric] != null) allMetricValues.push(s[metric]);
+                });
+            });
+            const minValue = Math.min(...allMetricValues);
+            const suggestedMin = Math.max(0, Math.floor(minValue * 0.95));
+
+            const datasets = [];
+            let colorIndex = 0;
+            const colorPalette = [
+                { color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+                { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+                { color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+                { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+                { color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
+                { color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
+                { color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.1)' },
+                { color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' }
+            ];
+
+            Object.entries(data).forEach(([bv, stats]) => {
+                const palette = colorPalette[colorIndex % colorPalette.length];
+                const statsMap = {};
+                stats.forEach(s => { statsMap[s.timestamp] = s; });
+                
+                datasets.push({
+                    label: stats[0]?.title || bv,
+                    data: timestamps.map(ts => statsMap[ts]?.[metric] || null),
+                    borderColor: palette.color,
+                    backgroundColor: palette.bg,
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    spanGaps: true,
+                    fill: true
+                });
+                
+                colorIndex++;
+            });
+
+            compareChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 300,
+                        easing: 'easeInOutQuad',
+                        y: false
+                    },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `视频${metricNames[metric]}对比`,
+                            color: colors.text,
+                            font: { size: 15, weight: '600' },
+                            padding: { bottom: 20 }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: colors.text,
+                                font: { size: 12, weight: '500' },
+                                padding: 15,
+                                usePointStyle: true
+                            },
+                            onClick: function(e, legendItem, legend) {
+                                const index = legendItem.datasetIndex;
+                                const ci = legend.chart;
+                                
+                                // 默认的显示/隐藏逻辑
+                                if (ci.isDatasetVisible(index)) {
+                                    ci.hide(index);
+                                } else {
+                                    ci.show(index);
+                                }
+                                
+                                // 重新计算可见数据的Y轴范围
+                                const visibleData = [];
+                                ci.data.datasets.forEach((dataset, i) => {
+                                    if (ci.isDatasetVisible(i)) {
+                                        visibleData.push(...dataset.data.filter(v => v != null && v > 0));
+                                    }
+                                });
+                                
+                                if (visibleData.length > 0) {
+                                    const minVal = Math.min(...visibleData);
+                                    ci.options.scales.y.min = minVal;
+                                    ci.update('none'); // 不带动画更新
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: colors.text,
+                            titleColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#000' : '#fff',
+                            bodyColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#000' : '#fff',
+                            borderColor: colors.border,
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { 
+                                color: colors.text,
+                                font: { size: 11 }
+                            },
+                            grid: { 
+                                color: colors.grid,
+                                lineWidth: 0.5
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            min: suggestedMin,
+                            ticks: { 
+                                color: colors.text,
+                                font: { size: 11 },
+                                callback: function(value) {
+                                    return value >= 10000 ? (value/10000).toFixed(1) + '万' : value;
+                                }
+                            },
+                            grid: { 
+                                color: colors.grid,
+                                lineWidth: 0.5
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 恢复隐藏状态
+            compareChart.data.datasets.forEach((dataset, i) => {
+                if (compareChartHiddenDatasets[dataset.label]) {
+                    compareChart.hide(i);
+                }
+            });
+        }
+
+        // 加载设置
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/config');
+                const result = await res.json();
+                if (result.code === 0) {
+                    document.getElementById('fetchInterval').value = result.data.fetch_interval_minutes || 10;
+                    document.getElementById('monitorList').value = (result.data.monitor_list || []).join('\n');
+                }
+
+                const videoRes = await fetch('/api/videos/info');
+                const videoResult = await videoRes.json();
+                if (videoResult.code === 0) {
+                    const select = document.getElementById('deleteVideo');
+                    select.innerHTML = '<option value="">所有视频</option>';
+                    videoResult.data.forEach(video => {
+                        const option = document.createElement('option');
+                        option.value = video.bv_id;
+                        option.textContent = `${video.title} (${video.bv_id})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                showError('加载设置失败: ' + error.message);
+            }
+        }
+
+        // 保存设置
+        async function saveSettings() {
+            const interval = parseInt(document.getElementById('fetchInterval').value);
+            const listText = document.getElementById('monitorList').value;
+            const monitorList = listText.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+
+            if (monitorList.length === 0) {
+                showError('请至少添加一个视频BV号');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fetch_interval_minutes: interval, monitor_list: monitorList })
+                });
+                const result = await res.json();
+                if (result.code === 0) {
+                    showSuccess('设置保存成功');
+                } else {
+                    showError('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                showError('保存设置失败: ' + error.message);
+            }
+        }
+
+        // 删除数据
+        async function deleteData() {
+            const bvId = document.getElementById('deleteVideo').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            const videoInfo = allVideosInfo.find(v => v.bv_id === bvId);
+            let confirmMsg = '确定要删除';
+            if (bvId) {
+                confirmMsg += ` 视频 "${videoInfo ? videoInfo.title : bvId}"`;
+            } else {
+                confirmMsg += ' 所有视频';
+            }
+            if (startTime || endTime) {
+                confirmMsg += ' 在指定时间范围内';
+            }
+            confirmMsg += ' 的数据吗？此操作不可恢复！';
+
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const params = new URLSearchParams();
+                if (bvId) params.append('bv_id', bvId);
+                if (startTime) params.append('start_time', startTime);
+                if (endTime) params.append('end_time', endTime);
+
+                const res = await fetch('/api/data/delete?' + params.toString(), { method: 'DELETE' });
+                const result = await res.json();
+                
+                if (result.code === 0) {
+                    showSuccess('数据删除成功');
+                    loadVideosForMonitor();
+                } else {
+                    showError('删除失败: ' + result.message);
+                }
+            } catch (error) {
+                showError('删除失败: ' + error.message);
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 10000) return (num / 10000).toFixed(2) + '万';
+            return num.toLocaleString();
+        }
+
+        function formatFullNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function showError(msg) {
+            const div = document.getElementById('errorMessage');
+            div.textContent = '❌ ' + msg;
+            div.style.display = 'block';
+            setTimeout(() => div.style.display = 'none', 5000);
+        }
+
+        function showSuccess(msg) {
+            const div = document.getElementById('successMessage');
+            div.textContent = '✓ ' + msg;
+            div.style.display = 'block';
+            setTimeout(() => div.style.display = 'none', 3000);
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
