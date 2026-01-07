@@ -135,8 +135,8 @@ if __name__ == '__main__':
             print("获取视频信息失败")
     else:
         # 没有参数时使用默认测试
-        print("用法: python bilibili_api.py -bv BV1xx411c7XZ")
+        print("用法: python bilibili_api.py -bv BV1JHLUz4EUy")
         print("\n使用默认测试BV号...")
-        info = api.get_video_info('BV1xx411c7XZ')
+        info = api.get_video_info('BV1JHLUz4EUy')
         if info:
             print(json.dumps(info, indent=2, ensure_ascii=False))

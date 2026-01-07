@@ -219,7 +219,8 @@ def get_config():
                 if bv and not bv.startswith('#'):
                     monitor_list.append(bv)
     except FileNotFoundError:
-        monitor_list = [current_config.get('bv_id', 'BV1xx411c7XZ')]
+        # 如果文件不存在，返回空列表
+        pass
     
     current_config['monitor_list'] = monitor_list
     

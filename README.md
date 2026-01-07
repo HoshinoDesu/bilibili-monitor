@@ -34,7 +34,7 @@
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/yourusername/bilibili-monitor.git
+git clone https://github.com/HoshinoDesu/bilibili-monitor.git
 cd bilibili-monitor
 ```
 
@@ -71,21 +71,13 @@ BV12qiMBdEcC
 
 6. **启动服务**
 
-方式一：使用批处理脚本（Windows）
+启动Web服务：
 ```bash
-# 启动Web服务
-start_web.bat
-
-# 启动数据监控（新窗口）
-start_monitor.bat
+python app.py
 ```
 
-方式二：手动启动
+启动数据监控（新终端窗口）：
 ```bash
-# 启动Web服务
-python app.py
-
-# 启动数据监控（新终端）
 python monitor.py
 ```
 
@@ -104,8 +96,6 @@ bilibili-monitor/
 ├── config.json            # 配置文件
 ├── monitor.list           # 监控视频列表
 ├── requirements.txt       # Python依赖
-├── start_web.bat         # Web服务启动脚本
-├── start_monitor.bat     # 监控服务启动脚本
 ├── templates/
 │   └── index.html        # Web界面
 └── data.db               # SQLite数据库（自动生成）
@@ -117,17 +107,13 @@ bilibili-monitor/
 
 ```json
 {
-    "bv_id": "BV1iMvXBhEbe",
     "fetch_interval_minutes": 10,
-    "api_port": 5000,
-    "monitor_list": ["BV1iMvXBhEbe", "BV1A6i4BqEn2"]
+    "api_port": 5000
 }
 ```
 
-- `bv_id`: 默认监控的视频BV号
 - `fetch_interval_minutes`: 数据抓取间隔（分钟）
 - `api_port`: Web服务端口
-- `monitor_list`: 监控视频列表
 
 ### monitor.list
 

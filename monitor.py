@@ -41,11 +41,13 @@ class VideoMonitor:
         import os
         
         if not os.path.exists(self.list_file):
-            # 如果文件不存在，使用config中的bv_id创建
-            default_bv = self.config.get('bv_id', 'BV1xx411c7XZ')
+            # 如果文件不存在，创建默认文件
             with open(self.list_file, 'w', encoding='utf-8') as f:
-                f.write(default_bv + '\n')
-            return [default_bv]
+                f.write('# Bilibili视频监控列表\n')
+                f.write('# 每行一个BV号，# 开头的行为注释\n')
+                f.write('# 示例：\n')
+                f.write('# BV1xx411c7XZ\n')
+            return []
         
         bv_list = []
         with open(self.list_file, 'r', encoding='utf-8') as f:
@@ -54,7 +56,7 @@ class VideoMonitor:
                 if bv and not bv.startswith('#'):  # 忽略空行和注释
                     bv_list.append(bv)
         
-        return bv_list if bv_list else [self.config.get('bv_id', 'BV1xx411c7XZ')]
+        return bv_list
     
     def fetch_and_save(self):
         """抓取并保存所有视频数据"""
